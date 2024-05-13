@@ -24,8 +24,11 @@
   - (c) average number of searches performed before viewing recipe
     - for sessions in which a recipe was viewed from 3. (a), this is the average of the number of daily views during those sessions which was found in 3. (b)
 5. Combine daily session summary from step 4. and most daily viewed recipe(s) from step 2.
-  - (a) perform a `LEFT JOIN` using the session date column since both steps 2. and 4. are aggregated by date
-  - (b) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For these rows, concatenate the `recipe_id`s into a comma-separated string on a single row using `GROUP BY`+`LISTAGG`. Based on [SQL order of operations](https://www.sisense.com/blog/sql-query-order-of-operations/), the `JOIN` is executed before the `GROUP BY`. For this reason, a `LEFT JOIN` is needed so that no rows on the LHS of the `JOIN`, with multiple recipes that tied for the most views (i.e. with duplicated session dates), are lost
+  - (a) perform a LEFT JOIN using the session date column since both steps 2. and 4. are aggregated by date
+  - (b) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For
+    these rows, concatenate the recipe_ids into a comma-separated string on a single row using GROUP BY+LISTAGG. Based on SQL order of operations, the JOIN
+    is executed before the GROUP BY. For this reason, a LEFT JOIN is needed so that no rows on the LHS of the JOIN are lost if multiple recipes were tied
+    for the most daily views.
   - (c) for readability, sort the result in chronological order using the session date column */
 
 /* step 1. get JSON of the last event and all events performed per session */
