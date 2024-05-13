@@ -27,8 +27,7 @@
   - (a) perform a LEFT JOIN using the session date column since both steps 2. and 4. are aggregated by date
   - (b) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For
     these rows, concatenate the recipe_ids into a comma-separated string on a single row using GROUP BY+LISTAGG. Based on SQL order of operations, the JOIN
-    is executed before the GROUP BY. For this reason, a LEFT JOIN is needed so that no rows on the LHS of the JOIN are lost if multiple recipes were tied
-    for the most daily views.
+    is executed before the GROUP BY. For this reason, a LEFT JOIN is needed so that no rows are lost if multiple recipes were tied for the most daily views.
   - (c) for readability, sort the result in chronological order using the session date column */
 
 /* step 1. get JSON of the last event and all events performed per session */
