@@ -1,3 +1,33 @@
+/* 1. perform the following operations on the events level data
+  - use PARSE_JSON to convert (a) last event and (b) all events in the event_details column into the VARIANT datatype that holds JSON information whose attributes be accessed later
+  - extract session date from the event_timestamp column
+  - exclude columns that are not used in downstream CTEs of the overall query
+    - user_id
+    - event_id
+2. get the most viewed recipe_id every day
+  - (a) get all sessions in which the last event was viewing a recipe
+  - (b) for all matching sessions from (a), use GROUP BY get the
+    - (i) recipe_id
+    - (ii) number of events in which a recipe was viewed per day
+      - this is the number of daily views per recipe, which will be used to rank the recipes
+  - (c) get the recipe_id with the most daily views
+    - use a RANK() window function to assign ranks to the `recipe_id`s based on their number of daily views
+    - use QUALIFY to get the recipe_ids for which RANK() OVER(...) = 1
+3. Summarize each session by getting the following stats per session per date
+  - (a) indicate if the session ended with a view of a recipe (i.e. if the last event in a session was to view a recipe)
+  - (b) count the number of events in which a search performed during the session
+    - this will be used to answer question 3
+  - (c) calculate the session length in seconds using TIMESTAMPDIFF('second', ...)
+4. From the output of step 3., get the following stats per date
+  - (a) number of unique sessions from 3. (a)
+  - (b) average session length from 3. (c)
+  - (c) average number of searches performed before viewing recipe
+    - for sessions in which a recipe was viewed from 3. (a), this is the average of the number of daily views during those sessions which was found in 3. (b)
+5. Combine daily session summary from step 4. and most daily viewed recipe(s) from step 2.
+  - (a) perform a `LEFT JOIN` using the session date column since both steps 2. and 4. are aggregated by date
+  - (b) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For these rows, concatenate the `recipe_id`s into a comma-separated string on a single row using `GROUP BY`+`LISTAGG`. Based on [SQL order of operations](https://www.sisense.com/blog/sql-query-order-of-operations/), the `JOIN` is executed before the `GROUP BY`. For this reason, a `LEFT JOIN` is needed so that no rows on the LHS of the `JOIN`, with multiple recipes that tied for the most views (i.e. with duplicated session dates), are lost
+  - (c) for readability, sort the result in chronological order using the session date column */
+
 /* step 1. get JSON of the last event and all events performed per session */
 WITH session_last_event_all_events_json AS (
     SELECT session_id,
