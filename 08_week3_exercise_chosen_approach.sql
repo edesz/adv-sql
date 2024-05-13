@@ -25,10 +25,15 @@
     - for sessions in which a recipe was viewed from 3. (a), this is the average of the number of daily views during those sessions which was found in 3. (b)
 5. Combine daily session summary from step 4. and most daily viewed recipe(s) from step 2.
   - (a) perform a LEFT JOIN using the session date column since both steps 2. and 4. are aggregated by date
-  - (b) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For
+  - (b) in the daily_session_summary CTE, session date was extracted as the date on which the session started. Some sessions can be spread out across two days.
+    Such sessions should only have been counted on the first day of the session and not on the second day. Also, session length was recorded on the first date
+    since session_date was recorded on the date on which the session started, so the session length should been excluded from the second date. In summary, such
+    multi-day sessions should not have been (i) counted on both days and (ii) used to calculate session length on the second day. However, such logic has
+    not been implemented earlier in the query. So, these rows must now be filtered out using WHERE session_length > 0.
+  - (c) the output of step 2. contains some dates on which multiple recipes were tied as the most viewed recipe since they had the same number of views. For
     these rows, concatenate the recipe_ids into a comma-separated string on a single row using GROUP BY+LISTAGG. Based on SQL order of operations, the JOIN
     is executed before the GROUP BY. For this reason, a LEFT JOIN is needed so that no rows are lost if multiple recipes were tied for the most daily views.
-  - (c) for readability, sort the result in chronological order using the session date column */
+  - (d) for readability, sort the result in chronological order using the session date column */
 
 /* step 1. get JSON of the last event and all events performed per session */
 WITH session_last_event_all_events_json AS (
@@ -117,9 +122,10 @@ daily_session_summary AS (
 /* step 5. combine daily session summary and most daily viewed recipe(s)
    (a) perform LEFT JOIN between recipe(s) with the most daily views and
    daily session summary
-   (b) concatenate most-viewed recipes into comma-delimited string, using
+   (b) handle multi-day sessions using WHERE avg_session_length_seconds > 0
+   (c) concatenate most-viewed recipes into comma-delimited string, using
    GROUP BY+LISTAGG
-   (c) sort result by session date in chronological order for readability */
+   (d) sort result by session date in chronological order for readability */
 daily_report_summary_sessions_recipe AS (
     SELECT * EXCLUDE(most_viewed_recipe),
            /* clean the most_viewed_recipe ID(s) per day */
@@ -135,6 +141,9 @@ daily_report_summary_sessions_recipe AS (
         FROM daily_session_summary AS ds
         /* step 5. (a) combine session summary and most-viewed receipe each day */
         LEFT JOIN most_viewed_recipe_daily AS dv USING (session_date)
+        /* step 5. (b) exclude sessions which have been counted on previous day and so
+           have a session length of zero */
+        WHERE avg_session_length_seconds > 0
         GROUP BY ALL
         /* step 5. (c) sort result in chronological order for readability */
         ORDER BY ds.session_date
