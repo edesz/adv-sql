@@ -135,7 +135,7 @@ daily_report_summary_sessions_recipe AS (
                ds.num_sessions,
                ds.avg_session_length_seconds,
                ds.avg_num_searches_before_viewing_recipe,
-               /* step 5. (b) concatenate ties beteween most-viewed recipes into
+               /* step 5. (c) concatenate ties beteween most-viewed recipes into
                   single row */
                LISTAGG(dv.recipe_id, ', ') AS most_viewed_recipe
         FROM daily_session_summary AS ds
@@ -145,7 +145,7 @@ daily_report_summary_sessions_recipe AS (
            have a session length of zero */
         WHERE avg_session_length_seconds > 0
         GROUP BY ALL
-        /* step 5. (c) sort result in chronological order for readability */
+        /* step 5. (d) sort result in chronological order for readability */
         ORDER BY ds.session_date
     )
 )
